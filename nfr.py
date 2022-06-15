@@ -14,6 +14,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+outputDir = os.getenv("OUTPUT_DIR")
+
 # Cert
 password = os.getenv("CERT_PASSWORD")
 cert_path = os.getenv("CERT_PATH")
@@ -49,9 +51,9 @@ applicationsRes = requests.get("https://api.forskningsradet.no/soknaderCSV", hea
 projectsRes = requests.get("https://api.forskningsradet.no/prosjekterCSV", headers=hdr)
 
 # Save results to file
-with open("applications.csv", "wb") as outfile:
+with open(outputDir+"/"+"applications.csv", "wb") as outfile:
     outfile.write(applicationsRes.content)
-with open("projects.csv", "wb") as outfile:
+with open(outputDir+"/"+"projects.csv", "wb") as outfile:
     outfile.write(projectsRes.content)
 
 
