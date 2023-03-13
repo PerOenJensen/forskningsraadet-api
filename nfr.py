@@ -48,11 +48,14 @@ bearerToken = maskinportenRes["access_token"]
 # Make call to NFR
 hdr = {'Authorization': 'Bearer {}'.format(bearerToken), 'User-Agent': 'nmbu' }
 applicationsRes = requests.get("https://api.forskningsradet.no/soknaderCSV", headers=hdr)
+applicationResultsRes = request.get("https://api.forskningsradet.no/soknaderesultaterCSV", headers=hdr")
 projectsRes = requests.get("https://api.forskningsradet.no/prosjekterCSV", headers=hdr)
 
 # Save results to file
 with open(outputDir+"/"+"applications.csv", "wb") as outfile:
     outfile.write(applicationsRes.content)
+with open(outputDir+"/"+"application_results.csv", "wb") as outfile:
+    outfile.write(applicationResultsRes.content)
 with open(outputDir+"/"+"projects.csv", "wb") as outfile:
     outfile.write(projectsRes.content)
 
