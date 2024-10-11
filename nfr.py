@@ -1,5 +1,5 @@
 #
-# NMBU - Get CSV from Forskningsrådet
+# NMBU - Get CSV from Forskningsradet
 #
 # API docs: https://api.forskningsradet.no/swagger-ui/index.html?configUrl=/v3/api-docs/swagger-config#
 #
@@ -9,8 +9,21 @@ import uuid
 import os
 import json 
 from datetime import datetime, timezone, timedelta
-from OpenSSL import crypto
 from dotenv import load_dotenv
+from cryptography.hazmat.primitives.serialization import pkcs12
+from cryptography.hazmat.primitives.serialization import load_pem_private_key
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.backends import default_backend
+from cryptography.x509 import load_pem_x509_certificate
+
+
+# Function to strip the PEM header and footer
+def strip_pem_header_footer(cert_pem):
+    # Decode PEM certificate to string, split into lines, and filter out the header/footer
+    stripped_lines = [line for line in cert_pem.decode().splitlines() if not line.startswith('-----')]
+    # Join the filtered lines back together
+    cert_raw = ''.join(stripped_lines)
+    return cert_raw
 
 load_dotenv()
 
@@ -28,11 +41,22 @@ scope = os.getenv("SCOPE")
 # Maskinporten
 maskinportenEndpoint = os.getenv("ENDPOINT")
 
+# Load the PKCS12 certificate and private key
+p12_data = None
+p12 = None
+
+with open(cert_path, "rb") as f:
+    p12_data = f.read()
+    p12 = pkcs12.load_key_and_certificates(p12_data, password.encode())
+
 # Get company certificate and private key
-p12 = crypto.load_pkcs12(open(cert_path, 'rb').read(), bytes(password, "utf-8"))
-private_key = crypto.dump_privatekey(crypto.FILETYPE_PEM, p12.get_privatekey())
-cert = crypto.dump_certificate(crypto.FILETYPE_PEM, p12.get_certificate())
-raw_cert = ''.join(str(cert).split('\\n')[1:-2]) # Strip PEM header and footer
+private_key = p12[0].private_bytes(
+    encoding=serialization.Encoding.PEM,
+    format=serialization.PrivateFormat.PKCS8,
+    encryption_algorithm=serialization.NoEncryption()
+)
+cert = p12[1].public_bytes(serialization.Encoding.PEM)
+raw_cert = strip_pem_header_footer(cert)
 
 # Generate JWT
 iat = datetime.now(tz=timezone.utc)
@@ -58,5 +82,3 @@ with open(outputDir+"/"+"application_results.csv", "wb") as outfile:
     outfile.write(applicationResultsRes.content)
 with open(outputDir+"/"+"projects.csv", "wb") as outfile:
     outfile.write(projectsRes.content)
-
-
